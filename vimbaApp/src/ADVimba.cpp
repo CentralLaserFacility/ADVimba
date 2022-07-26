@@ -82,6 +82,21 @@ void ADVimbaFrameObserver::FrameReceived(const FramePtr pFrame) {
     pVimba_->processFrame(pFrame);
 }
 
+ADVimbaCameraListObserver::ADVimbaCameraListObserver(CameraPtr pCamera, class ADVimba *pVimba) 
+    :   IFrameObserver(pCamera),
+        pCamera_(pCamera), 
+        pVimba_(pVimba)
+{
+}
+
+ADVimbaCameraListObserver::~ADVimbaCameraListObserver() 
+{
+}
+  
+void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTriggerType reason ) {
+    // Trigger call when camera list changes
+}
+
 /** Configuration function to configure one camera.
  *
  * This function need to be called once for each camera to be used by the IOC. A call to this

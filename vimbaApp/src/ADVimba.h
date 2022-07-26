@@ -26,6 +26,15 @@ public:
     class ADVimba *pVimba_;  
 };
 
+class ADVimbaCameraListObserver : virtual public ICameraListObserver {
+public:
+    ADVimbaCameraListObserver(CameraPtr pCamera, class ADVimba *pVimba);
+    ~ADVimbaCameraListObserver();
+    virtual void CameraListChanged( CameraPtr pCam, UpdateTriggerType reason );
+    CameraPtr pCamera_;
+    class ADVimba *pVimba_;  
+};
+
 /** Main driver class inherited from areaDetectors ADGenICam class.
  * One instance of this class will control one camera.
  */
