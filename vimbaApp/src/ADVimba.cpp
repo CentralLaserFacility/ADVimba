@@ -83,7 +83,7 @@ void ADVimbaFrameObserver::FrameReceived(const FramePtr pFrame) {
 }
 
 ADVimbaCameraListObserver::ADVimbaCameraListObserver(CameraPtr pCamera, class ADVimba *pVimba) 
-    :   ICameraListObserver(pCamera),
+    :   ICameraListObserver(),
         pCamera_(pCamera), 
         pVimba_(pVimba)
 {
@@ -95,8 +95,7 @@ ADVimbaCameraListObserver::~ADVimbaCameraListObserver()
   
 void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTriggerType reason ) {
     // Trigger call when camera list changes
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
-            "CameraListChanged\n");
+    printf("CameraListChanged\n");
 }
 
 /** Configuration function to configure one camera.
@@ -252,12 +251,13 @@ asynStatus ADVimba::connectCamera(void)
     }
 
     // add camera list observer 
-    if (checkError(system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(cameraId_, this))), functionName, 
-                   "VimbaSystem::RegisterCameraListObserver")) {
-         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
-            "%s::%s error camera list observer\n", driverName, functionName, cameraId_);
-       return asynError;                  
-    }
+    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, this)));
+    // if (checkError(system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, this)))), functionName, 
+    //                "VimbaSystem::RegisterCameraListObserver") {
+    //      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
+    //         "%s::%s error camera list observer\n", driverName, functionName, cameraId_);
+    //    return asynError;                  
+    // }
 
     // Set the GeV packet size to the highest value that works
     FeaturePtr pFeature;
