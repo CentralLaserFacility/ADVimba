@@ -28,11 +28,12 @@ public:
 
 class ADVimbaCameraListObserver : virtual public ICameraListObserver {
 public:
-    ADVimbaCameraListObserver(CameraPtr pCamera, class ADVimba *pVimba);
+    ADVimbaCameraListObserver(CameraPtr pCamera, const char *pCameraId, VimbaSystem & pSystem);
     ~ADVimbaCameraListObserver();
     virtual void CameraListChanged( CameraPtr pCam, UpdateTriggerType reason );
     CameraPtr pCamera_;
-    class ADVimba *pVimba_;  
+    const char *pCameraId_;
+    VimbaSystem & pSystem_;  
 };
 
 /** Main driver class inherited from areaDetectors ADGenICam class.
