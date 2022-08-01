@@ -16,6 +16,10 @@ using namespace std;
 #define VMBConvertPixelFormatString  "VMB_CONVERT_PIXEL_FORMAT"   // asynParamInt32, R/W
 #define VMBTimeStampModeString       "VMB_TIME_STAMP_MODE"        // asynParamInt32, R/O
 #define VMBUniqueIdModeString        "VMB_UNIQUE_ID_MODE"         // asynParamInt32, R/O
+#define CameraConnectedString        "CAMERA_CONNECTED"         // asynParamInt32, R/O
+
+#define CONNECTED 1
+#define DISCONNECTED 0
 
 class ADVimbaFrameObserver : virtual public IFrameObserver {
 public:
@@ -28,12 +32,13 @@ public:
 
 class ADVimbaCameraListObserver : virtual public ICameraListObserver {
 public:
-    ADVimbaCameraListObserver(CameraPtr pCamera, const char *pCameraId, VimbaSystem & pSystem);
+    ADVimbaCameraListObserver(CameraPtr pCamera, const char *pCameraId, VimbaSystem & pSystem, class ADVimba *pVimba);
     ~ADVimbaCameraListObserver();
     virtual void CameraListChanged( CameraPtr pCam, UpdateTriggerType reason );
     CameraPtr pCamera_;
     const char *pCameraId_;
-    VimbaSystem & pSystem_;  
+    VimbaSystem & pSystem_; 
+    class ADVimba *pVimba_; 
 };
 
 /** Main driver class inherited from areaDetectors ADGenICam class.
@@ -60,6 +65,8 @@ public:
     void shutdown();
     CameraPtr getCamera();
     asynStatus processFrame(FramePtr pFrame);
+    int CameraConnected;
+
 
 private:
     inline asynStatus checkError(VmbErrorType error, const char *functionName, const char *message);

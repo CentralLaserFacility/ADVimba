@@ -82,11 +82,12 @@ void ADVimbaFrameObserver::FrameReceived(const FramePtr pFrame) {
     pVimba_->processFrame(pFrame);
 }
 
-ADVimbaCameraListObserver::ADVimbaCameraListObserver(CameraPtr pCamera, const char *pCameraId, VimbaSystem & pSystem) 
+ADVimbaCameraListObserver::ADVimbaCameraListObserver(CameraPtr pCamera, const char *pCameraId, VimbaSystem & pSystem, class ADVimba *pVimba) 
     :   ICameraListObserver(),
         pCamera_(pCamera), 
         pCameraId_(pCameraId),
-        pSystem_(pSystem)
+        pSystem_(pSystem),
+        pVimba_(pVimba)
 
 {
 }
@@ -100,10 +101,13 @@ void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTrigger
     // Trigger call when camera list changes 0 - IN; 1-OUT
     if (pSystem_.GetCameraByID(pCameraId_, pCamera_)) {
         printf("Camera Disconnected\n");
+        pVimba_->setIntegerParam(pVimba_->CameraConnected, DISCONNECTED);
     }
     else    {
+        pVimba_->setIntegerParam(pVimba_->CameraConnected, CONNECTED);
         printf("Camera Connected\n");
-    }    
+    } 
+    pVimba_->callParamCallbacks();   
     printf("CameraListChanged\n");
 }
 
@@ -185,6 +189,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     createParam("VMB_CONVERT_PIXEL_FORMAT",     asynParamInt32,   &VMBConvertPixelFormat);
     createParam("VMB_TIME_STAMP_MODE",          asynParamInt32,   &VMBTimeStampMode);
     createParam("VMB_UNIQUE_ID_MODE",           asynParamInt32,   &VMBUniqueIdMode);
+    createParam("CAMERA_CONNECTED",             asynParamInt32,   &CameraConnected);
 
     /* Set initial values of some parameters */
     setIntegerParam(NDDataType, NDUInt8);
@@ -194,6 +199,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     setIntegerParam(ADMinY, 0);
     setStringParam(ADStringToServer, "<not used by driver>");
     setStringParam(ADStringFromServer, "<not used by driver>");
+    setIntegerParam(CameraConnected, CONNECTED);
 
     startEventId_ = epicsEventCreate(epicsEventEmpty);
     newFrameEventId_ = epicsEventCreate(epicsEventEmpty);
@@ -260,7 +266,7 @@ asynStatus ADVimba::connectCamera(void)
     }
 
     // add camera list observer 
-    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, cameraId_, system_)));
+    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, cameraId_, system_, this)));
 
     // Set the GeV packet size to the highest value that works
     FeaturePtr pFeature;
