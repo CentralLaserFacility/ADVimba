@@ -66,6 +66,12 @@ public:
     CameraPtr getCamera();
     asynStatus processFrame(FramePtr pFrame);
     int CameraConnected;
+    asynStatus startCapture();
+    asynStatus stopCapture();
+    asynStatus connectCamera();
+    asynStatus disconnectCamera();
+    const char *cameraId_;
+    CameraPtr pCamera_;
 
 
 private:
@@ -76,13 +82,13 @@ private:
     int VMBUniqueIdMode;
 
     /* Local methods to this class */
-    asynStatus startCapture();
-    asynStatus stopCapture();
-    asynStatus connectCamera();
-    asynStatus disconnectCamera();
+    // asynStatus startCapture();
+    // asynStatus stopCapture();
+    // asynStatus connectCamera();
+    // asynStatus disconnectCamera();
 
-    const char *cameraId_;
-    CameraPtr pCamera_;
+    //const char *cameraId_;
+    //CameraPtr pCamera_;
     VimbaSystem & system_;
 
     bool exiting_;
