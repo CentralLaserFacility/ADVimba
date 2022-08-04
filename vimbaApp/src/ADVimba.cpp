@@ -82,9 +82,10 @@ void ADVimbaFrameObserver::FrameReceived(const FramePtr pFrame) {
     pVimba_->processFrame(pFrame);
 }
 
-ADVimbaCameraListObserver::ADVimbaCameraListObserver(const char *pCameraId, VimbaSystem & pSystem, class ADVimba *pVimba) 
+ADVimbaCameraListObserver::ADVimbaCameraListObserver( CameraPtr pCamera, VimbaSystem & pSystem, class ADVimba *pVimba) 
     :   ICameraListObserver(),
-        pCameraId_(pCameraId),
+        pCamera_(pCamera),
+        //pCameraId_(pCameraId),
         pSystem_(VimbaSystem::GetInstance()),
         pVimba_(pVimba)
 
@@ -99,83 +100,23 @@ void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTrigger
     static const char *functionName = "CameraListChanged";
     // Trigger call when camera list changes 0 - IN; 1-OUT
 
-    
-    //printf("Connection Status: %d\n", pSystem_.GetCameraByID(pCameraId_, pCamera_));
-    std::string sCameraId;
-    VmbErrorType err = pCam->GetID( sCameraId );
-
-    const char *pCamId = sCameraId.c_str();
-    //printf("Camera ID from camera object: %s\n", pcameraId);
-
-    if(reason==0)
+    if (reason==1) // camera plugged out
     {
-        CameraPtr pCamera;
-        printf("Camera (%s) is plugged in.\n", pCamId);
-        pVimba_->cameraId_ = pCamId;
-        // if(pSystem_.OpenCameraByID(pCamId, VmbAccessModeFull, pCamera))
-        if(pVimba_->connectCamera())
-        {
-            printf("Camera Connected\n");
-        }
-        else
-        {
-            printf("Can not connect camera\n");
-        }
-    }
-    else if (reason==1)
-    {
+        std::string sCameraId;
+        pCam->GetID( sCameraId );
+        const char *pCamId = sCameraId.c_str();
         printf("Camera (%s) is plugged out.\n", pCamId);
+        std::string sCameraId1;
+        pCamera_->GetID( sCameraId1 );
+        const char *pCamId1 = sCameraId1.c_str();
+        printf("Camera (%s) we are interested in.\n", pCamId1);
+        if(sCameraId==sCameraId1)
+        {
+            pVimba_->setIntegerParam(pVimba_->CameraConnected, DISCONNECTED);
+            //Shutdown the IOC when CameraConnected is false
+        }      
     }
-
-    //printf("Connection Status: %d\n", pSystem_.GetCameraByID(pcameraId, pCamera_));
-    //printf("Camera ID: %s\n", pCameraId_);
-
-    // CameraPtrVector cameras;
-    // pSystem_.GetCameras(cameras);
-    // int numCameras = (int)cameras.size();
-    // printf("Camera count: %d\n", numCameras);
-
-    // std::string sCameraIdFromList;
-    // bool isMatched=false;
-    // for (int i=0;i<numCameras;i++)
-    // {
-    //     VmbErrorType err = cameras[i]->GetID( sCameraIdFromList );
-    //     if(sCameraIdFromList==sCameraId)
-    //     {
-    //         isMatched=true;
-    //     }
-    // }
-    // if(isMatched)
-    // {
-    //     //It would be good to check if the camera isalready open or not
-    //     if(pSystem_.OpenCameraByID(pcameraId, VmbAccessModeFull, pCamera_))
-    //     {
-            
-    //         pVimba_->setIntegerParam(pVimba_->CameraConnected, CONNECTED);
-    //         printf("Camera Connected\n");
-    //     }
-    //     else
-    //     {
-    //         printf("Can not connect camera\n");
-    //     }
-    // }
-    // else
-    // {
-    //     pVimba_->setIntegerParam(pVimba_->CameraConnected, DISCONNECTED);
-    //     printf("Camera Disconnected\n");
-    // }
-
-    //printf("Connection Status: %d\n", pSystem_.OpenCameraByID("192.168.30.90", VmbAccessModeFull, pCamera_));
-    // if (pSystem_.GetCameraByID(pCameraId_, pCamera_)) {
-    //     printf("Camera Disconnected\n");
-    //     pVimba_->setIntegerParam(pVimba_->CameraConnected, DISCONNECTED);
-    // }
-    // else    {
-    //     pVimba_->setIntegerParam(pVimba_->CameraConnected, CONNECTED);
-    //     printf("Camera Connected\n");
-    // } 
-    pVimba_->callParamCallbacks();   
-    //printf("CameraListChanged\n");
+    pVimba_->callParamCallbacks();
 }
 
 /** Configuration function to configure one camera.
@@ -242,9 +183,6 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     epicsSnprintf(tempString, sizeof(tempString), "%d.%d.%d", 
                   version.major, version.minor, version.patch);
     setStringParam(ADSDKVersion,tempString);
-    
-    // add camera list observer 
-    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(cameraId, system_, this)));
     
     status = connectCamera();
     if (status) {
@@ -327,15 +265,13 @@ GenICamFeature *ADVimba::createFeature(GenICamFeatureSet *set,
 asynStatus ADVimba::connectCamera(void)
 {
     static const char *functionName = "connectCamera";
-    printf("Camera ID: %s\n", cameraId_);
     if (checkError(system_.OpenCameraByID(cameraId_, VmbAccessModeFull, pCamera_), functionName, 
                    "VimbaSystem::OpenCameraByID")) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
             "%s::%s error opening camera %s\n", driverName, functionName, cameraId_);
        return asynError;
     }
-
-    
+    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, system_, this)));
 
     // Set the GeV packet size to the highest value that works
     FeaturePtr pFeature;
@@ -682,7 +618,6 @@ asynStatus ADVimba::readEnum(asynUser *pasynUser, char *strings[], int values[],
 asynStatus ADVimba::startCapture()
 {
     //static const char *functionName = "startCapture";
-    printf("startCapture()\n");
     // If we are already acquiring return immediately
     if (acquiring_) return asynSuccess;
 
@@ -700,7 +635,6 @@ asynStatus ADVimba::stopCapture()
 {
     int status;
     //static const char *functionName = "stopCapture";
-    printf("stopCapture()\n");
     setIntegerParam(ADAcquire, 0);
     setShutter(0);
     // Need to wait for the task to set the status to idle

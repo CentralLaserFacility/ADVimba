@@ -32,7 +32,7 @@ public:
 
 class ADVimbaCameraListObserver : virtual public ICameraListObserver {
 public:
-    ADVimbaCameraListObserver(const char *pCameraId, VimbaSystem & pSystem, class ADVimba *pVimba);
+    ADVimbaCameraListObserver(CameraPtr pCamera, VimbaSystem & pSystem, class ADVimba *pVimba);
     ~ADVimbaCameraListObserver();
     virtual void CameraListChanged( CameraPtr pCam, UpdateTriggerType reason );
     CameraPtr pCamera_;
@@ -66,12 +66,6 @@ public:
     CameraPtr getCamera();
     asynStatus processFrame(FramePtr pFrame);
     int CameraConnected;
-    asynStatus startCapture();
-    asynStatus stopCapture();
-    asynStatus connectCamera();
-    asynStatus disconnectCamera();
-    const char *cameraId_;
-    CameraPtr pCamera_;
 
 
 private:
@@ -82,13 +76,13 @@ private:
     int VMBUniqueIdMode;
 
     /* Local methods to this class */
-    // asynStatus startCapture();
-    // asynStatus stopCapture();
-    // asynStatus connectCamera();
-    // asynStatus disconnectCamera();
+    asynStatus startCapture();
+    asynStatus stopCapture();
+    asynStatus connectCamera();
+    asynStatus disconnectCamera();
 
-    //const char *cameraId_;
-    //CameraPtr pCamera_;
+    const char *cameraId_;
+    CameraPtr pCamera_;
     VimbaSystem & system_;
 
     bool exiting_;
