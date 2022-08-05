@@ -102,15 +102,11 @@ void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTrigger
 
     if (reason==1) // camera plugged out
     {
-        std::string sCameraId;
-        pCam->GetID( sCameraId );
-        const char *pCamId = sCameraId.c_str();
-        printf("Camera (%s) is plugged out.\n", pCamId);
-        std::string sCameraId1;
-        pCamera_->GetID( sCameraId1 );
-        const char *pCamId1 = sCameraId1.c_str();
-        printf("Camera (%s) we are interested in.\n", pCamId1);
-        if(sCameraId==sCameraId1)
+        std::string sPluggedOutCameraId;
+        pCam->GetID( sPluggedOutCameraId );
+        std::string sInterestedCameraId;
+        pCamera_->GetID( sInterestedCameraId );
+        if(sPluggedOutCameraId==sInterestedCameraId)
         {
             pVimba_->setIntegerParam(pVimba_->CameraConnected, DISCONNECTED);
             //Shutdown the IOC when CameraConnected is false
@@ -248,7 +244,6 @@ inline asynStatus ADVimba::checkError(VmbErrorType error, const char *functionNa
 void ADVimba::shutdown(void)
 {
     //static const char *functionName = "shutdown";
-    
     lock();
     exiting_ = true;
     pCamera_->Close();
