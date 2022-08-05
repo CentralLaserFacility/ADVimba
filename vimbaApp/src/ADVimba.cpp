@@ -82,13 +82,10 @@ void ADVimbaFrameObserver::FrameReceived(const FramePtr pFrame) {
     pVimba_->processFrame(pFrame);
 }
 
-ADVimbaCameraListObserver::ADVimbaCameraListObserver( CameraPtr pCamera, VimbaSystem & pSystem, class ADVimba *pVimba) 
+ADVimbaCameraListObserver::ADVimbaCameraListObserver( CameraPtr pCamera, class ADVimba *pVimba) 
     :   ICameraListObserver(),
         pCamera_(pCamera),
-        //pCameraId_(pCameraId),
-        pSystem_(VimbaSystem::GetInstance()),
         pVimba_(pVimba)
-
 {
 }
 
@@ -178,8 +175,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     checkError(system_.QueryVersion(version), functionName, "VimbaSystem::QueryVersion");
     epicsSnprintf(tempString, sizeof(tempString), "%d.%d.%d", 
                   version.major, version.minor, version.patch);
-    setStringParam(ADSDKVersion,tempString);
-    
+    setStringParam(ADSDKVersion,tempString);   
     status = connectCamera();
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
@@ -266,7 +262,9 @@ asynStatus ADVimba::connectCamera(void)
             "%s::%s error opening camera %s\n", driverName, functionName, cameraId_);
        return asynError;
     }
-    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, system_, this)));
+    
+    //Register to observe camera list changes
+    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, this)));
 
     // Set the GeV packet size to the highest value that works
     FeaturePtr pFeature;

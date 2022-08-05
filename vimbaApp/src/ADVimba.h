@@ -32,12 +32,10 @@ public:
 
 class ADVimbaCameraListObserver : virtual public ICameraListObserver {
 public:
-    ADVimbaCameraListObserver(CameraPtr pCamera, VimbaSystem & pSystem, class ADVimba *pVimba);
+    ADVimbaCameraListObserver(CameraPtr pCamera, class ADVimba *pVimba);
     ~ADVimbaCameraListObserver();
     virtual void CameraListChanged( CameraPtr pCam, UpdateTriggerType reason );
     CameraPtr pCamera_;
-    const char *pCameraId_;
-    VimbaSystem & pSystem_; 
     class ADVimba *pVimba_; 
 };
 
