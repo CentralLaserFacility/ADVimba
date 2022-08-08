@@ -16,6 +16,10 @@ using namespace std;
 #define VMBConvertPixelFormatString  "VMB_CONVERT_PIXEL_FORMAT"   // asynParamInt32, R/W
 #define VMBTimeStampModeString       "VMB_TIME_STAMP_MODE"        // asynParamInt32, R/O
 #define VMBUniqueIdModeString        "VMB_UNIQUE_ID_MODE"         // asynParamInt32, R/O
+#define CameraConnectedString        "VMB_CAMERA_CONNECTED"         // asynParamInt32, R/O
+
+#define CONNECTED 1
+#define DISCONNECTED 0
 
 class ADVimbaFrameObserver : virtual public IFrameObserver {
 public:
@@ -24,6 +28,15 @@ public:
     virtual void FrameReceived(const FramePtr pFrame);
     CameraPtr pCamera_;
     class ADVimba *pVimba_;  
+};
+
+class ADVimbaCameraListObserver : virtual public ICameraListObserver {
+public:
+    ADVimbaCameraListObserver(CameraPtr pCamera, class ADVimba *pVimba);
+    ~ADVimbaCameraListObserver();
+    virtual void CameraListChanged( CameraPtr pCam, UpdateTriggerType reason );
+    CameraPtr pCamera_;
+    class ADVimba *pVimba_; 
 };
 
 /** Main driver class inherited from areaDetectors ADGenICam class.
@@ -48,8 +61,10 @@ public:
     /**< These should be private but are called from C callback functions, must be public. */
     void imageGrabTask();
     void shutdown();
+    void setCameraConnectionStatus(int status);
     CameraPtr getCamera();
     asynStatus processFrame(FramePtr pFrame);
+
 
 private:
     inline asynStatus checkError(VmbErrorType error, const char *functionName, const char *message);
@@ -57,6 +72,7 @@ private:
 #define FIRST_VMB_PARAM VMBConvertPixelFormat;
     int VMBTimeStampMode;
     int VMBUniqueIdMode;
+    int VMBCameraConnected;
 
     /* Local methods to this class */
     asynStatus startCapture();

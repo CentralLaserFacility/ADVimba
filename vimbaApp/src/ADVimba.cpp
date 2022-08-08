@@ -82,6 +82,38 @@ void ADVimbaFrameObserver::FrameReceived(const FramePtr pFrame) {
     pVimba_->processFrame(pFrame);
 }
 
+ADVimbaCameraListObserver::ADVimbaCameraListObserver( CameraPtr pCamera, class ADVimba *pVimba) 
+    :   ICameraListObserver(),
+        pCamera_(pCamera),
+        pVimba_(pVimba)
+{
+}
+
+ADVimbaCameraListObserver::~ADVimbaCameraListObserver() 
+{
+}
+  
+void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTriggerType reason ) {
+    static const char *functionName = "CameraListChanged";
+    // Trigger call when camera list changes 0 - IN; 1-OUT
+
+    if (reason==1) // camera plugged out
+    {
+        std::string sPluggedOutCameraId;
+        pCam->GetID( sPluggedOutCameraId );
+        std::string sInterestedCameraId;
+        pCamera_->GetID( sInterestedCameraId );
+
+        //Checking if the plugged out camera is same as the camera we are interested in.
+        if(sPluggedOutCameraId==sInterestedCameraId)
+        {
+            // Setting connection status
+            pVimba_->setCameraConnectionStatus(DISCONNECTED);
+        }      
+    }
+    
+}
+
 /** Configuration function to configure one camera.
  *
  * This function need to be called once for each camera to be used by the IOC. A call to this
@@ -145,8 +177,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     checkError(system_.QueryVersion(version), functionName, "VimbaSystem::QueryVersion");
     epicsSnprintf(tempString, sizeof(tempString), "%d.%d.%d", 
                   version.major, version.minor, version.patch);
-    setStringParam(ADSDKVersion,tempString);
- 
+    setStringParam(ADSDKVersion,tempString);   
     status = connectCamera();
     if (status) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
@@ -160,6 +191,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     createParam("VMB_CONVERT_PIXEL_FORMAT",     asynParamInt32,   &VMBConvertPixelFormat);
     createParam("VMB_TIME_STAMP_MODE",          asynParamInt32,   &VMBTimeStampMode);
     createParam("VMB_UNIQUE_ID_MODE",           asynParamInt32,   &VMBUniqueIdMode);
+    createParam("VMB_CAMERA_CONNECTED",         asynParamInt32,   &VMBCameraConnected);
 
     /* Set initial values of some parameters */
     setIntegerParam(NDDataType, NDUInt8);
@@ -169,6 +201,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     setIntegerParam(ADMinY, 0);
     setStringParam(ADStringToServer, "<not used by driver>");
     setStringParam(ADStringFromServer, "<not used by driver>");
+    setIntegerParam(VMBCameraConnected, CONNECTED);
 
     startEventId_ = epicsEventCreate(epicsEventEmpty);
     newFrameEventId_ = epicsEventCreate(epicsEventEmpty);
@@ -209,12 +242,18 @@ inline asynStatus ADVimba::checkError(VmbErrorType error, const char *functionNa
 void ADVimba::shutdown(void)
 {
     //static const char *functionName = "shutdown";
-    
     lock();
     exiting_ = true;
     pCamera_->Close();
     system_.Shutdown();
     unlock();
+}
+
+void ADVimba::setCameraConnectionStatus(int status)
+{
+    //static const char *functionName = "setCameraConnectionStatus";
+    setIntegerParam(VMBCameraConnected, status);
+    callParamCallbacks();
 }
 
 GenICamFeature *ADVimba::createFeature(GenICamFeatureSet *set, 
@@ -226,13 +265,16 @@ GenICamFeature *ADVimba::createFeature(GenICamFeatureSet *set,
 asynStatus ADVimba::connectCamera(void)
 {
     static const char *functionName = "connectCamera";
-
     if (checkError(system_.OpenCameraByID(cameraId_, VmbAccessModeFull, pCamera_), functionName, 
                    "VimbaSystem::OpenCameraByID")) {
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
             "%s::%s error opening camera %s\n", driverName, functionName, cameraId_);
        return asynError;
     }
+    
+    //Register to observe camera list changes
+    system_.RegisterCameraListObserver(ICameraListObserverPtr(new ADVimbaCameraListObserver(pCamera_, this)));
+
     // Set the GeV packet size to the highest value that works
     FeaturePtr pFeature;
     bool done;
@@ -247,6 +289,8 @@ asynStatus ADVimba::connectCamera(void)
     finished:
     return asynSuccess;
 }
+
+
 
 
 /** Task to grab images off the camera and send them up to areaDetector
@@ -578,7 +622,6 @@ asynStatus ADVimba::readEnum(asynUser *pasynUser, char *strings[], int values[],
 asynStatus ADVimba::startCapture()
 {
     //static const char *functionName = "startCapture";
-
     // If we are already acquiring return immediately
     if (acquiring_) return asynSuccess;
 
@@ -596,7 +639,6 @@ asynStatus ADVimba::stopCapture()
 {
     int status;
     //static const char *functionName = "stopCapture";
-
     setIntegerParam(ADAcquire, 0);
     setShutter(0);
     // Need to wait for the task to set the status to idle

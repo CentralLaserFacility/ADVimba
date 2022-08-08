@@ -149,3 +149,12 @@ record(mbbi, "$(P)$(R)GC_StreamType_RBV") {
   field(DISA, "0")
   info(autosaveFields, "DESC ZRSV ONSV TWSV THSV FRSV FVSV SXSV SVSV EISV NISV TESV ELSV TVSV TTSV FTSV FFSV TSE")
 }
+
+record(bi, "$(P)$(R)CameraConnected_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT) 0)VMB_CAMERA_CONNECTED")
+   field(ZNAM, "Disconnected")
+   field(ONAM, "Connected")
+   field(SCAN, "I/O Intr")
+}
