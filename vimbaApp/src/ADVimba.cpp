@@ -107,11 +107,11 @@ void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTrigger
         //Checking if the plugged out camera is same as the camera we are interested in.
         if(sPluggedOutCameraId==sInterestedCameraId)
         {
-            pVimba_->setIntegerParam(pVimba_->CameraConnected, DISCONNECTED);
-            //Shutdown the IOC when CameraConnected is false
+            // Setting connection status
+            pVimba_->setCameraConnectionStatus(DISCONNECTED);
         }      
     }
-    pVimba_->callParamCallbacks();
+    
 }
 
 /** Configuration function to configure one camera.
@@ -191,7 +191,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     createParam("VMB_CONVERT_PIXEL_FORMAT",     asynParamInt32,   &VMBConvertPixelFormat);
     createParam("VMB_TIME_STAMP_MODE",          asynParamInt32,   &VMBTimeStampMode);
     createParam("VMB_UNIQUE_ID_MODE",           asynParamInt32,   &VMBUniqueIdMode);
-    createParam("CAMERA_CONNECTED",             asynParamInt32,   &CameraConnected);
+    createParam("VMB_CAMERA_CONNECTED",         asynParamInt32,   &VMBCameraConnected);
 
     /* Set initial values of some parameters */
     setIntegerParam(NDDataType, NDUInt8);
@@ -201,7 +201,7 @@ ADVimba::ADVimba(const char *portName, const char *cameraId,
     setIntegerParam(ADMinY, 0);
     setStringParam(ADStringToServer, "<not used by driver>");
     setStringParam(ADStringFromServer, "<not used by driver>");
-    setIntegerParam(CameraConnected, CONNECTED);
+    setIntegerParam(VMBCameraConnected, CONNECTED);
 
     startEventId_ = epicsEventCreate(epicsEventEmpty);
     newFrameEventId_ = epicsEventCreate(epicsEventEmpty);
@@ -249,6 +249,13 @@ void ADVimba::shutdown(void)
     unlock();
 }
 
+void ADVimba::setCameraConnectionStatus(int status)
+{
+    //static const char *functionName = "setCameraConnectionStatus";
+    setIntegerParam(VMBCameraConnected, status);
+    callParamCallbacks();
+}
+
 GenICamFeature *ADVimba::createFeature(GenICamFeatureSet *set, 
                                        std::string const & asynName, asynParamType asynType, int asynIndex,
                                        std::string const & featureName, GCFeatureType_t featureType) {
@@ -282,6 +289,8 @@ asynStatus ADVimba::connectCamera(void)
     finished:
     return asynSuccess;
 }
+
+
 
 
 /** Task to grab images off the camera and send them up to areaDetector

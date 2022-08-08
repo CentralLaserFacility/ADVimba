@@ -16,7 +16,7 @@ using namespace std;
 #define VMBConvertPixelFormatString  "VMB_CONVERT_PIXEL_FORMAT"   // asynParamInt32, R/W
 #define VMBTimeStampModeString       "VMB_TIME_STAMP_MODE"        // asynParamInt32, R/O
 #define VMBUniqueIdModeString        "VMB_UNIQUE_ID_MODE"         // asynParamInt32, R/O
-#define CameraConnectedString        "CAMERA_CONNECTED"         // asynParamInt32, R/O
+#define CameraConnectedString        "VMB_CAMERA_CONNECTED"         // asynParamInt32, R/O
 
 #define CONNECTED 1
 #define DISCONNECTED 0
@@ -61,9 +61,9 @@ public:
     /**< These should be private but are called from C callback functions, must be public. */
     void imageGrabTask();
     void shutdown();
+    void setCameraConnectionStatus(int status);
     CameraPtr getCamera();
     asynStatus processFrame(FramePtr pFrame);
-    int CameraConnected;
 
 
 private:
@@ -72,6 +72,7 @@ private:
 #define FIRST_VMB_PARAM VMBConvertPixelFormat;
     int VMBTimeStampMode;
     int VMBUniqueIdMode;
+    int VMBCameraConnected;
 
     /* Local methods to this class */
     asynStatus startCapture();
