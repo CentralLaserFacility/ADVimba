@@ -103,6 +103,8 @@ void ADVimbaCameraListObserver::CameraListChanged( CameraPtr pCam, UpdateTrigger
         pCam->GetID( sPluggedOutCameraId );
         std::string sInterestedCameraId;
         pCamera_->GetID( sInterestedCameraId );
+
+        //Checking if the plugged out camera is same as the camera we are interested in.
         if(sPluggedOutCameraId==sInterestedCameraId)
         {
             pVimba_->setIntegerParam(pVimba_->CameraConnected, DISCONNECTED);
